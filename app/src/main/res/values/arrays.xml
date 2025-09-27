@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="user_types">
+        <item>user</item>
+        <item>moderator</item>
+    </string-array>
+</resources>
+

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@drawable/ic_home"
+        android:title="Home" />
+    <item
+        android:id="@+id/nav_hotlines"
+        android:icon="@drawable/ic_phone"
+        android:title="Hotlines" />
+    <item
+        android:id="@+id/fab_emergency"
+        android:title=""
+        android:enabled="false"/>
+    <item
+        android:id="@+id/nav_locations"
+        android:icon="@drawable/ic_location"
+        android:title="Locations" />
+    <item
+        android:id="@+id/nav_feedback"
+        android:icon="@drawable/ic_feedback"
+        android:title="Feedback" />
+</menu>
