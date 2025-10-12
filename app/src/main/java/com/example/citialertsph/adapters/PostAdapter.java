@@ -12,6 +12,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
+import com.bumptech.glide.request.RequestOptions;
 import com.example.citialertsph.R;
 import com.example.citialertsph.models.Post;
 import com.example.citialertsph.utils.ApiClient;
@@ -24,18 +26,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import com.example.citialertsph.utils.ApiClient;
-
-
-
 public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder> {
     private List<Post> posts = new ArrayList<>();
     private Context context;
     private OnPostClickListener listener;
 
-
     public interface OnPostClickListener {
         void onPostClick(Post post);
+        void onImageClick(Post post, ImageView imageView);
     }
 
     public PostAdapter(Context context, OnPostClickListener listener) {
@@ -54,45 +52,95 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     public void onBindViewHolder(@NonNull PostViewHolder holder, int position) {
         Post post = posts.get(position);
 
-        // Set post data
+        // Bind data to views
         holder.tvPostTitle.setText(post.getTitle());
         holder.tvPostDescription.setText(post.getDescription());
         holder.tvModeratorName.setText(post.getModeratorName());
-        holder.tvViewCount.setText(String.valueOf(post.getViews()) + " views");
+        holder.tvModeratorOrganization.setText(post.getModeratorOrganization());
+        holder.tvViewCount.setText(post.getViews() + " views");
+        holder.tvStatus.setText(post.getStatus());
 
-        // Handle moderator verification badge
+        // Show/hide verified badge
         holder.ivVerifiedBadge.setVisibility(post.isModeratorVerified() ? View.VISIBLE : View.GONE);
 
-        // Load post image if exists
-        if (post.getImagePath() != null && !post.getImagePath().isEmpty()) {
+        // Set status badge color based on status
+        setStatusBadgeColor(holder, post.getStatus());
+
+        // Format and set time
+        holder.tvPostTime.setText(formatTimeAgo(post.getCreatedAt()));
+
+        // Load moderator image (supports absolute URL or API-relative path)
+        String modImg = post.getModeratorImage();
+        if (modImg != null && !modImg.isEmpty()) {
+            String url = modImg.startsWith("http") ? modImg : (ApiClient.BASE_URL + modImg);
             Glide.with(context)
-                    .load(ApiClient.BASE_URL + post.getImagePath())
-                    .placeholder(R.drawable.placeholder_image)
-                    .error(R.drawable.error_image)
-                    .into(holder.ivPostImage);
-            holder.ivPostImage.setVisibility(View.VISIBLE);
+                .load(url)
+                .placeholder(R.drawable.default_profile)
+                .error(R.drawable.default_profile)
+                .circleCrop()
+                .into(holder.ivModeratorImage);
         } else {
-            holder.ivPostImage.setVisibility(View.GONE);
-        }
-
-        // Load moderator profile image
-        if (post.getModeratorImage() != null && !post.getModeratorImage().isEmpty()) {
             Glide.with(context)
-                    .load(ApiClient.BASE_URL + post.getModeratorImage())
-                    .placeholder(R.drawable.default_profile)
-                    .error(R.drawable.default_profile)
-                    .into(holder.ivModeratorImage);
+                .load(R.drawable.default_profile)
+                .circleCrop()
+                .into(holder.ivModeratorImage);
         }
 
-        // Set relative timestamp
-        holder.tvPostTime.setText(getRelativeTimeSpan(post.getCreatedAt()));
+        // Load post image with rounded corners
+        if (post.getImagePath() != null && !post.getImagePath().isEmpty()) {
+            holder.imageCardView.setVisibility(View.VISIBLE);
 
-        // Set click listener
+            RequestOptions requestOptions = new RequestOptions()
+                .placeholder(R.drawable.placeholder_image)
+                .error(R.drawable.error_image)
+                .transform(new RoundedCorners(32));
+
+            Glide.with(context)
+                .load(ApiClient.BASE_URL + post.getImagePath()) // Removed "uploads/" since it's already in getImagePath()
+                .apply(requestOptions)
+                .into(holder.ivPostImage);
+        } else {
+            holder.imageCardView.setVisibility(View.GONE);
+        }
+
+        // Set click listeners
         holder.itemView.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onPostClick(post);
             }
         });
+
+        // Image click for zoom functionality
+        holder.ivPostImage.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onImageClick(post, holder.ivPostImage);
+            }
+        });
+    }
+
+    private void setStatusBadgeColor(PostViewHolder holder, String status) {
+        // Handle null status by providing a default value
+        if (status == null) {
+            status = "pending"; // Default status if null
+        }
+
+        int colorRes;
+        switch (status.toLowerCase()) {
+            case "completed":
+                colorRes = R.color.status_completed;
+                break;
+            case "help_coming":
+                colorRes = R.color.status_help_coming;
+                break;
+            case "pending":
+            default:
+                colorRes = R.color.status_pending;
+                break;
+        }
+        // Cast to CardView to access setCardBackgroundColor method
+        if (holder.statusBadge instanceof androidx.cardview.widget.CardView) {
+            ((androidx.cardview.widget.CardView) holder.statusBadge).setCardBackgroundColor(context.getResources().getColor(colorRes));
+        }
     }
 
     @Override
@@ -100,51 +148,61 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
         return posts.size();
     }
 
-    public void setPosts(List<Post> newPosts) {
-        this.posts.clear();
-        this.posts.addAll(newPosts);
+    public void setPosts(List<Post> posts) {
+        this.posts = posts;
         notifyDataSetChanged();
     }
 
     public void addPost(Post post) {
-        this.posts.add(0, post);
+        posts.add(0, post);
         notifyItemInserted(0);
     }
 
-    private String getRelativeTimeSpan(String timestamp) {
+    private String formatTimeAgo(String dateString) {
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
             sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-            Date date = sdf.parse(timestamp);
-            long time = date.getTime();
-            long now = System.currentTimeMillis();
+            Date date = sdf.parse(dateString);
 
-            return DateUtils.getRelativeTimeSpanString(time, now, DateUtils.MINUTE_IN_MILLIS).toString();
+            if (date != null) {
+                return DateUtils.getRelativeTimeSpanString(
+                    date.getTime(),
+                    System.currentTimeMillis(),
+                    DateUtils.MINUTE_IN_MILLIS,
+                    DateUtils.FORMAT_ABBREV_RELATIVE
+                ).toString();
+            }
         } catch (ParseException e) {
-            return timestamp;
+            e.printStackTrace();
         }
+        return "Just now";
     }
 
-    static class PostViewHolder extends RecyclerView.ViewHolder {
-        ImageView ivPostImage;
-        ImageView ivModeratorImage;
-        ImageView ivVerifiedBadge;
-        TextView tvPostTitle;
-        TextView tvPostDescription;
-        TextView tvModeratorName;
-        TextView tvPostTime;
-        TextView tvViewCount;
+    public static class PostViewHolder extends RecyclerView.ViewHolder {
+        TextView tvPostTitle, tvPostDescription, tvModeratorName, tvModeratorOrganization, tvPostTime;
+        TextView tvViewCount, tvStatus;
+        ImageView ivPostImage, ivModeratorImage, ivVerifiedBadge;
+        View imageCardView;
+        androidx.cardview.widget.CardView statusBadge; // Changed from View to CardView
 
-        PostViewHolder(View itemView) {
+        public PostViewHolder(@NonNull View itemView) {
             super(itemView);
-            ivPostImage = itemView.findViewById(R.id.ivPostImage);
-            ivModeratorImage = itemView.findViewById(R.id.ivModeratorImage);
-            ivVerifiedBadge = itemView.findViewById(R.id.ivVerifiedBadge);
+
+            // Initialize views
             tvPostTitle = itemView.findViewById(R.id.tvPostTitle);
             tvPostDescription = itemView.findViewById(R.id.tvPostDescription);
             tvModeratorName = itemView.findViewById(R.id.tvModeratorName);
+            tvModeratorOrganization = itemView.findViewById(R.id.tvModeratorOrganization);
             tvPostTime = itemView.findViewById(R.id.tvPostTime);
             tvViewCount = itemView.findViewById(R.id.tvViewCount);
+            tvStatus = itemView.findViewById(R.id.tvStatus);
+
+            ivPostImage = itemView.findViewById(R.id.ivPostImage);
+            ivModeratorImage = itemView.findViewById(R.id.ivModeratorImage);
+            ivVerifiedBadge = itemView.findViewById(R.id.ivVerifiedBadge);
+
+            imageCardView = itemView.findViewById(R.id.imageCardView);
+            statusBadge = itemView.findViewById(R.id.statusBadge); // Now properly typed as CardView
         }
     }
 }

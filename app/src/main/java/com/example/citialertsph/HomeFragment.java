@@ -29,6 +29,8 @@ import com.example.citialertsph.databinding.FragmentHomeBinding;
 import com.example.citialertsph.utils.ApiClient;
 import com.example.citialertsph.utils.SessionManager;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -59,7 +61,9 @@ public class HomeFragment extends Fragment {
                     try {
                         Bitmap bitmap = MediaStore.Images.Media.getBitmap(
                                 requireActivity().getContentResolver(), imageUri);
-                        dialogImageView.setImageBitmap(bitmap);
+                        if (dialogImageView != null) {
+                            dialogImageView.setImageBitmap(bitmap);
+                        }
                         base64Image = bitmapToBase64(bitmap);
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -82,59 +86,102 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupViews() {
-        // Show moderator panel if user is moderator
-        if (sessionManager.isModerator()) {
-            binding.moderatorPanel.setVisibility(View.VISIBLE);
-            binding.btnAddPost.setOnClickListener(v -> showAddPostDialog());
-        }
+        // Always hide fragment-level FAB to avoid duplication with Activity FAB
+        if (binding.fabAddPost != null) binding.fabAddPost.setVisibility(View.GONE);
 
         // Setup SwipeRefreshLayout
         binding.swipeRefresh.setOnRefreshListener(this::loadPosts);
 
-        // Setup RecyclerView and Adapter
-        postAdapter = new PostAdapter(requireContext(), post -> {
-            // TODO: Handle post click - open detail view
-            Toast.makeText(getContext(), "Post clicked: " + post.getTitle(), Toast.LENGTH_SHORT).show();
+        // Setup RecyclerView and Adapter with image zoom functionality
+        postAdapter = new PostAdapter(requireContext(), new PostAdapter.OnPostClickListener() {
+            @Override
+            public void onPostClick(Post post) {
+                Toast.makeText(getContext(), "Post clicked: " + post.getTitle(), Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onImageClick(Post post, ImageView imageView) {
+                if (post.getImagePath() != null && !post.getImagePath().isEmpty()) {
+                    Intent zoomIntent = ImageZoomActivity.createIntent(
+                            requireContext(),
+                            post.getImagePath(),
+                            post.getTitle()
+                    );
+                    startActivity(zoomIntent);
+                }
+            }
         });
         binding.recyclerPosts.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.recyclerPosts.setAdapter(postAdapter);
     }
 
+    // Public method for Activity to open the bottom sheet composer
+    public void openCreatePostComposer() {
+        showAddPostDialog();
+    }
+
     private void showAddPostDialog() {
-        addPostDialog = new Dialog(requireContext());
-        addPostDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        addPostDialog.setContentView(R.layout.dialog_add_post);
+        // Use a Material BottomSheet for modern UX
+        BottomSheetDialog bottomSheet = new BottomSheetDialog(requireContext());
+        View content = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_post, null, false);
+        bottomSheet.setContentView(content);
+        addPostDialog = bottomSheet; // Keep reference for lifecycle dismissal
 
-        // Initialize dialog views
-        dialogImageView = addPostDialog.findViewById(R.id.ivPostImage);
-        EditText etTitle = addPostDialog.findViewById(R.id.etPostTitle);
-        EditText etDescription = addPostDialog.findViewById(R.id.etPostDescription);
-        MaterialButton btnSelectImage = addPostDialog.findViewById(R.id.btnSelectImage);
-        MaterialButton btnCancel = addPostDialog.findViewById(R.id.btnCancel);
-        MaterialButton btnPost = addPostDialog.findViewById(R.id.btnPost);
+        // Initialize dialog views from the content view
+        dialogImageView = content.findViewById(R.id.ivPostImage);
+        View imageOverlay = content.findViewById(R.id.imageOverlay);
+        View imageCard = content.findViewById(R.id.imageCard);
+        ImageView btnClose = content.findViewById(R.id.btnCloseDialog);
+        EditText etTitle = content.findViewById(R.id.etPostTitle);
+        EditText etDescription = content.findViewById(R.id.etPostDescription);
+        MaterialButton btnSelectImage = content.findViewById(R.id.btnSelectImage);
+        MaterialButton btnCancel = content.findViewById(R.id.btnCancel);
+        MaterialButton btnPost = content.findViewById(R.id.btnPost);
 
-        // Setup click listeners
-        btnSelectImage.setOnClickListener(v -> {
+        // Unified image selection triggers
+        View.OnClickListener selectImage = v -> {
             Intent intent = new Intent(Intent.ACTION_PICK);
             intent.setType("image/*");
             imagePickerLauncher.launch(intent);
+        };
+        if (btnSelectImage != null) btnSelectImage.setOnClickListener(selectImage);
+        if (imageOverlay != null) imageOverlay.setOnClickListener(selectImage);
+        if (imageCard != null) imageCard.setOnClickListener(selectImage);
+        if (dialogImageView != null) dialogImageView.setOnClickListener(selectImage);
+
+        // Close and cancel actions
+        if (btnClose != null) btnClose.setOnClickListener(v -> {
+            base64Image = "";
+            addPostDialog.dismiss();
+        });
+        if (btnCancel != null) btnCancel.setOnClickListener(v -> {
+            base64Image = "";
+            addPostDialog.dismiss();
         });
 
-        btnCancel.setOnClickListener(v -> addPostDialog.dismiss());
+        // Post action
+        if (btnPost != null) {
+            btnPost.setOnClickListener(v -> {
+                String title = etTitle != null ? etTitle.getText().toString().trim() : "";
+                String description = etDescription != null ? etDescription.getText().toString().trim() : "";
 
-        btnPost.setOnClickListener(v -> {
-            String title = etTitle.getText().toString().trim();
-            String description = etDescription.getText().toString().trim();
+                if (title.isEmpty() || description.isEmpty()) {
+                    Toast.makeText(getContext(), "Please fill all fields", Toast.LENGTH_SHORT).show();
+                    return;
+                }
 
-            if (title.isEmpty() || description.isEmpty()) {
-                Toast.makeText(getContext(), "Please fill all fields", Toast.LENGTH_SHORT).show();
-                return;
-            }
+                createPost(title, description);
+            });
+        }
 
-            createPost(title, description);
-        });
+        bottomSheet.show();
 
-        addPostDialog.show();
+        // Expand by default for better visibility
+        View sheet = bottomSheet.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+        if (sheet != null) {
+            com.google.android.material.bottomsheet.BottomSheetBehavior<View> behavior = com.google.android.material.bottomsheet.BottomSheetBehavior.from(sheet);
+            behavior.setState(com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED);
+        }
     }
 
     private void createPost(String title, String description) {
@@ -159,22 +206,27 @@ public class HomeFragment extends Fragment {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                String responseBody = response.body().string();
+                String responseBody = response.body() != null ? response.body().string() : "";
                 requireActivity().runOnUiThread(() -> {
                     binding.progressBar.setVisibility(View.GONE);
                     try {
                         JsonObject jsonResponse = ApiClient.parseResponse(responseBody);
-                        boolean success = jsonResponse.get("success").getAsBoolean();
-                        String message = jsonResponse.get("message").getAsString();
+                        boolean success = jsonResponse.has("success") && jsonResponse.get("success").getAsBoolean();
+                        String message = jsonResponse.has("message") ? jsonResponse.get("message").getAsString() : "";
 
-                        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                        if (!message.isEmpty()) {
+                            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                        }
                         if (success) {
-                            addPostDialog.dismiss();
+                            if (addPostDialog != null && addPostDialog.isShowing()) {
+                                addPostDialog.dismiss();
+                            }
+                            base64Image = ""; // reset after success
                             loadPosts(); // Refresh posts list
                         }
                     } catch (Exception e) {
                         Toast.makeText(getContext(), "Error processing response",
-                            Toast.LENGTH_SHORT).show();
+                                Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -195,13 +247,13 @@ public class HomeFragment extends Fragment {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                String responseBody = response.body().string();
+                String responseBody = response.body() != null ? response.body().string() : "";
                 requireActivity().runOnUiThread(() -> {
                     binding.progressBar.setVisibility(View.GONE);
                     binding.swipeRefresh.setRefreshing(false);
                     try {
                         JsonObject jsonResponse = ApiClient.parseResponse(responseBody);
-                        if (jsonResponse.get("success").getAsBoolean()) {
+                        if (jsonResponse.has("success") && jsonResponse.get("success").getAsBoolean()) {
                             JsonArray postsArray = jsonResponse.getAsJsonArray("posts");
                             List<Post> posts = new ArrayList<>();
 
@@ -212,27 +264,35 @@ public class HomeFragment extends Fragment {
                                 post.setModeratorId(postObj.get("moderator_id").getAsInt());
                                 post.setTitle(postObj.get("title").getAsString());
                                 post.setDescription(postObj.get("description").getAsString());
-                                if (!postObj.get("image_path").isJsonNull()) {
+                                if (postObj.has("image_path") && !postObj.get("image_path").isJsonNull()) {
                                     post.setImagePath(postObj.get("image_path").getAsString());
                                 }
                                 post.setViews(postObj.get("views").getAsInt());
                                 post.setCreatedAt(postObj.get("created_at").getAsString());
-                                post.setModeratorName(postObj.get("moderator_name").getAsString());
-                                if (!postObj.get("moderator_image").isJsonNull()) {
+                                if (postObj.has("moderator_name") && !postObj.get("moderator_name").isJsonNull()) {
+                                    post.setModeratorName(postObj.get("moderator_name").getAsString());
+                                }
+                                if (postObj.has("moderator_organization") && !postObj.get("moderator_organization").isJsonNull()) {
+                                    post.setModeratorOrganization(postObj.get("moderator_organization").getAsString());
+                                }
+                                if (postObj.has("moderator_image") && !postObj.get("moderator_image").isJsonNull()) {
                                     post.setModeratorImage(postObj.get("moderator_image").getAsString());
                                 }
-                                post.setModeratorVerified(postObj.get("moderator_verified").getAsBoolean());
+                                if (postObj.has("moderator_verified") && !postObj.get("moderator_verified").isJsonNull()) {
+                                    post.setModeratorVerified(postObj.get("moderator_verified").getAsBoolean());
+                                }
                                 posts.add(post);
                             }
 
                             postAdapter.setPosts(posts);
                         } else {
-                            Toast.makeText(getContext(), "Error: " + jsonResponse.get("message").getAsString(),
-                                Toast.LENGTH_SHORT).show();
+                            String msg = jsonResponse.has("message") ? jsonResponse.get("message").getAsString() : "Unknown error";
+                            Toast.makeText(getContext(), "Error: " + msg,
+                                    Toast.LENGTH_SHORT).show();
                         }
                     } catch (Exception e) {
                         Toast.makeText(getContext(), "Error processing response",
-                            Toast.LENGTH_SHORT).show();
+                                Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -253,5 +313,7 @@ public class HomeFragment extends Fragment {
         if (addPostDialog != null && addPostDialog.isShowing()) {
             addPostDialog.dismiss();
         }
+        base64Image = "";
+        dialogImageView = null;
     }
 }

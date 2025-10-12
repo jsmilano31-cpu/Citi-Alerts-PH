@@ -32,7 +32,7 @@ import okhttp3.Callback;
 import okhttp3.Response;
 
 public class RegisterActivity extends AppCompatActivity {
-    private EditText etUsername, etPassword, etEmail, etFirstName, etLastName, etPhone;
+    private EditText etUsername, etPassword, etEmail, etFirstName, etLastName, etPhone, etOrganization;
     private Button btnRegister, btnUploadCredentials;
     private ImageView ivCredentials;
     private Spinner spinnerUserType;
@@ -76,6 +76,7 @@ public class RegisterActivity extends AppCompatActivity {
         etFirstName = findViewById(R.id.etFirstName);
         etLastName = findViewById(R.id.etLastName);
         etPhone = findViewById(R.id.etPhone);
+        etOrganization = findViewById(R.id.etOrganization);
         btnRegister = findViewById(R.id.btnRegister);
         btnUploadCredentials = findViewById(R.id.btnUploadCredentials);
         ivCredentials = findViewById(R.id.ivCredentials);
@@ -87,24 +88,29 @@ public class RegisterActivity extends AppCompatActivity {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinnerUserType.setAdapter(adapter);
 
-        // Initially hide credential upload UI
+        // Initially hide moderator-specific fields
         btnUploadCredentials.setVisibility(View.GONE);
         ivCredentials.setVisibility(View.GONE);
+        findViewById(R.id.tilOrganization).setVisibility(View.GONE);
 
-        // Handle credential upload visibility based on user type
+        // Handle visibility based on user type selection
         spinnerUserType.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 String selectedType = parent.getItemAtPosition(position).toString();
                 boolean isModerator = selectedType.equals("moderator");
+
+                // Show/hide moderator-specific fields
                 btnUploadCredentials.setVisibility(isModerator ? View.VISIBLE : View.GONE);
                 ivCredentials.setVisibility(isModerator ? View.VISIBLE : View.GONE);
+                findViewById(R.id.tilOrganization).setVisibility(isModerator ? View.VISIBLE : View.GONE);
 
-                // Clear image if switching to user type
+                // Clear fields if switching to user type
                 if (!isModerator) {
                     ivCredentials.setImageResource(R.drawable.ic_upload_image);
                     base64Image = "";
                     btnUploadCredentials.setText("Upload Credentials");
+                    etOrganization.setText(""); // Clear organization field
                 }
             }
 
@@ -112,6 +118,7 @@ public class RegisterActivity extends AppCompatActivity {
             public void onNothingSelected(AdapterView<?> parent) {
                 btnUploadCredentials.setVisibility(View.GONE);
                 ivCredentials.setVisibility(View.GONE);
+                findViewById(R.id.tilOrganization).setVisibility(View.GONE);
             }
         });
     }
@@ -148,6 +155,7 @@ public class RegisterActivity extends AppCompatActivity {
         jsonBody.addProperty("first_name", etFirstName.getText().toString().trim());
         jsonBody.addProperty("last_name", etLastName.getText().toString().trim());
         jsonBody.addProperty("phone", etPhone.getText().toString().trim());
+        jsonBody.addProperty("organization", etOrganization.getText().toString().trim());
         jsonBody.addProperty("user_type", spinnerUserType.getSelectedItem().toString());
 
         // Only add credential image if user type is moderator

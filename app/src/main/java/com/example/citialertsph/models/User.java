@@ -7,6 +7,7 @@ public class User {
     private String firstName;
     private String lastName;
     private String phone;
+    private String organization;
     private String userType;
     private boolean isVerified;
     private String profileImage;
@@ -16,13 +17,14 @@ public class User {
     }
 
     public User(int id, String username, String email, String firstName, String lastName,
-                String phone, String userType, boolean isVerified, String profileImage, String createdAt) {
+                String phone, String organization, String userType, boolean isVerified, String profileImage, String createdAt) {
         this.id = id;
         this.username = username;
         this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
         this.phone = phone;
+        this.organization = organization;
         this.userType = userType;
         this.isVerified = isVerified;
         this.profileImage = profileImage;
@@ -76,6 +78,14 @@ public class User {
 
     public void setPhone(String phone) {
         this.phone = phone;
+    }
+
+    public String getOrganization() {
+        return organization;
+    }
+
+    public void setOrganization(String organization) {
+        this.organization = organization;
     }
 
     public String getUserType() {

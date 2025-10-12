@@ -9,7 +9,7 @@ android {
     defaultConfig {
         applicationId = "com.example.citialertsph"
         minSdk = 29
-        targetSdk = 36
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -49,8 +49,12 @@ dependencies {
     // JSON parsing (Gson)
     implementation("com.google.code.gson:gson:2.10.1")
 
-    // Image loading library
+    // Glide for image loading
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+
+    // OpenStreetMaps
+    implementation("org.osmdroid:osmdroid-android:6.1.17")
 
     // RecyclerView (for lists)
     implementation("androidx.recyclerview:recyclerview:1.3.2")
@@ -83,6 +87,7 @@ dependencies {
 
     implementation("de.hdodenhof:circleimageview:3.1.0")
 // Or the latest version
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

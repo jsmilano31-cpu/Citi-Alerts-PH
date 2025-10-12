@@ -1,3 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Citi Alerts PH</string>
+    <string name="your_location_format">Your location: %1$s</string>
+    <string name="location_format">Location: %1$.6f, %2$.6f</string>
+    <string name="emergency_type_title">Select Emergency Type</string>
+    <string name="cancel_dialog_title">Cancel Emergency Request</string>
+    <string name="cancel_dialog_message">Are you sure you want to cancel your emergency request?</string>
+    <string name="yes_cancel">Yes, Cancel</string>
+    <string name="no">No</string>
+    <string name="request_sent">Request sent! Looking for available responders…</string>
+    <string name="help_on_way">Help is on the way!</string>
+    <string name="looking_for_responders">Looking for available responders…</string>
+    <string name="request_completed">Emergency request completed</string>
+    <string name="request_cancelled">Emergency request cancelled</string>
+    <string name="waiting_response">Waiting for response…</string>
+    <string name="sending_request">Sending emergency request…</string>
+    <string name="location_permission_required">Location permission is required</string>
+    <string name="request_accepted">Emergency request accepted</string>
+    <string name="failed_accept">Failed to accept request</string>
+    <string name="respond_emergency">RESPOND TO EMERGENCY</string>
+
+    <!-- Registration form strings -->
+    <string name="create_account">Create Account</string>
+    <string name="join_community">Join our emergency response community</string>
+    <string name="verification_documents">Verification Documents</string>
+    <string name="upload_credentials">Upload Credentials</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="email_address">Email Address</string>
+    <string name="first_name">First Name</string>
+    <string name="last_name">Last Name</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="organization_department">Organization/Department</string>
+    <string name="account_type">Account Type</string>
+    <string name="already_have_account">Already have an account? </string>
+    <string name="sign_in">Sign In</string>
+    <string name="credentials_image_desc">Credentials verification image</string>
+    <string name="emergency">Emergency</string>
+    <string name="add_post">Add Post</string>
+    <string name="profile">Profile</string>
 </resources>

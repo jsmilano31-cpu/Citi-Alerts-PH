@@ -75,8 +75,8 @@ if (!isset($_SESSION['admin_id'])) {
             <a href="manage-reports.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'manage-reports.php' ? 'active' : ''; ?>">
                 <i class='bx bxs-report'></i> Manage Reports
             </a>
-            <a href="manage-hotlines.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'manage-hotlines.php' ? 'active' : ''; ?>">
-                <i class='bx bxs-phone'></i> Manage Hotlines
+            <a href="manage-posts.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'manage-posts.php' ? 'active' : ''; ?>">
+                <i class='bx bxs-news'></i> Manage Posts
             </a>
             <a href="manage-locations.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'manage-locations.php' ? 'active' : ''; ?>">
                 <i class='bx bxs-map'></i> Manage Locations
@@ -90,4 +90,3 @@ if (!isset($_SESSION['admin_id'])) {
     </div>
 </head>
 <body>
-

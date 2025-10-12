@@ -11,6 +11,7 @@ public class Post {
     private String createdAt;
     private String updatedAt;
     private String moderatorName;
+    private String moderatorOrganization;
     private String moderatorImage;
     private boolean moderatorVerified;
 
@@ -44,6 +45,9 @@ public class Post {
 
     public String getModeratorName() { return moderatorName; }
     public void setModeratorName(String moderatorName) { this.moderatorName = moderatorName; }
+
+    public String getModeratorOrganization() { return moderatorOrganization; }
+    public void setModeratorOrganization(String moderatorOrganization) { this.moderatorOrganization = moderatorOrganization; }
 
     public String getModeratorImage() { return moderatorImage; }
     public void setModeratorImage(String moderatorImage) { this.moderatorImage = moderatorImage; }

@@ -123,6 +123,9 @@ public class LoginActivity extends AppCompatActivity {
                             if (!userJson.isNull("phone")) {
                                 user.setPhone(userJson.getString("phone"));
                             }
+                            if (!userJson.isNull("organization")) {
+                                user.setOrganization(userJson.getString("organization"));
+                            }
                             if (!userJson.isNull("profile_image")) {
                                 user.setProfileImage(userJson.getString("profile_image"));
                             }
@@ -130,8 +133,16 @@ public class LoginActivity extends AppCompatActivity {
                                 user.setCreatedAt(userJson.getString("created_at"));
                             }
 
-                            // Save user session
-                            sessionManager.createLoginSession(user);
+                            // Save user session with individual parameters
+                            sessionManager.createLoginSession(
+                                user.getId(),
+                                user.getUsername(),
+                                user.getUserType(),
+                                user.getEmail(),
+                                user.getFirstName(),
+                                user.getLastName(),
+                                user.getOrganization()
+                            );
                             Log.d(TAG, "User session created successfully");
 
                             Toast.makeText(LoginActivity.this, message, Toast.LENGTH_SHORT).show();
@@ -143,18 +154,24 @@ public class LoginActivity extends AppCompatActivity {
                             Toast.makeText(LoginActivity.this, message, Toast.LENGTH_SHORT).show();
                         }
                     } catch (JSONException e) {
-                        Log.e(TAG, "Error parsing JSON response: " + e.getMessage());
-                        Log.e(TAG, "Response that caused error: " + response);
-                        Toast.makeText(LoginActivity.this, "Error parsing response", Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "Error parsing login response: " + e.getMessage());
+                        e.printStackTrace();
+                        Toast.makeText(LoginActivity.this, "Invalid server response", Toast.LENGTH_SHORT).show();
                     }
                 });
-            } catch (Exception e) {
-                Log.e(TAG, "Network error: " + e.getMessage());
-                Log.e(TAG, "Stack trace: ", e);
+            } catch (IOException e) {
+                Log.e(TAG, "Network error during login: " + e.getMessage());
                 mainHandler.post(() -> {
                     binding.btnLogin.setEnabled(true);
                     binding.btnLogin.setText("Login");
-                    Toast.makeText(LoginActivity.this, "Network error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(LoginActivity.this, "Network error. Please try again.", Toast.LENGTH_SHORT).show();
+                });
+            } catch (JSONException e) {
+                Log.e(TAG, "JSON error during login: " + e.getMessage());
+                mainHandler.post(() -> {
+                    binding.btnLogin.setEnabled(true);
+                    binding.btnLogin.setText("Login");
+                    Toast.makeText(LoginActivity.this, "Invalid server response.", Toast.LENGTH_SHORT).show();
                 });
             }
         });
@@ -179,7 +196,20 @@ public class LoginActivity extends AppCompatActivity {
 
             // Log response code and headers
             int responseCode = conn.getResponseCode();
-            Log.d(TAG, "Response code: " + responseCode);
+            String responseMessage = conn.getResponseMessage();
+            Log.d(TAG, String.format("Endpoint response - Code: %d, Message: %s", responseCode, responseMessage));
+
+            if (responseCode >= 400) {
+                Log.e(TAG, String.format("Login endpoint error - HTTP %d: %s", responseCode, responseMessage));
+                // Log error stream content for debugging
+                try (BufferedReader errorReader = new BufferedReader(new InputStreamReader(conn.getErrorStream()))) {
+                    String errorResponse = errorReader.lines().reduce("", String::concat);
+                    Log.e(TAG, "Error response body: " + errorResponse);
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to read error stream: " + e.getMessage());
+                }
+            }
+
             Log.d(TAG, "Response headers: " + conn.getHeaderFields());
 
             // Read response
@@ -192,10 +222,13 @@ public class LoginActivity extends AppCompatActivity {
                 }
             }
 
-            String responseData = response.toString();
-            Log.d(TAG, "Response data: " + responseData);
-            return responseData;
-
+            String responseBody = response.toString();
+            Log.d(TAG, "Response body: " + responseBody);
+            return responseBody;
+        } catch (IOException e) {
+            Log.e(TAG, "Login endpoint connection error: " + e.getMessage());
+            Log.e(TAG, "Failed endpoint URL: " + urlString);
+            throw e;
         } finally {
             conn.disconnect();
         }

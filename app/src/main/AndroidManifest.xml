@@ -10,6 +10,11 @@
     <uses-permission
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
+    <!-- Location permissions -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- OpenStreetMap needs this -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
         android:allowBackup="true"
@@ -22,7 +27,7 @@
         android:theme="@style/Theme.CitiAlertsPH"
         android:usesCleartextTraffic="true"
         android:networkSecurityConfig="@xml/network_security_config">
-
+    
         <!-- Splash Activity - Main launcher -->
         <activity
             android:name=".SplashActivity"
@@ -51,7 +56,15 @@
         <!-- Emergency Activity -->
         <activity
             android:name=".EmergencyActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:label="Emergency Help" />
+
+        <!-- Image Zoom Activity -->
+        <activity
+            android:name=".ImageZoomActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+
     </application>
 
 </manifest>

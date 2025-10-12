@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <!-- Emergency Pattern - Abstract geometric shapes -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M50,50 L150,50 L150,150 L50,150 Z"
+        android:fillAlpha="0.1" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M25,25 L75,25 L75,75 L25,75 Z"
+        android:fillAlpha="0.05" />
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M125,125 L175,125 L175,175 L125,175 Z"
+        android:fillAlpha="0.05" />
+
+    <!-- Circle as path for better compatibility -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.08"
+        android:pathData="M 100, 70 A 30, 30 0 1, 1 100, 130 A 30, 30 0 1, 1 100, 70 Z" />
+
+</vector>

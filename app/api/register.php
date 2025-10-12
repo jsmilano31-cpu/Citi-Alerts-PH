@@ -102,6 +102,7 @@ try {
         'first_name' => $data->first_name ?? '',
         'last_name' => $data->last_name ?? '',
         'phone' => $data->phone ?? '',
+        'organization' => $data->organization ?? '',
         'user_type' => $data->user_type ?? 'user',
         'verification_documents' => $verification_documents,
         'is_verified' => 0
@@ -109,9 +110,9 @@ try {
 
     // Insert new user
     $sql = "INSERT INTO users (username, password, email, first_name, last_name, phone,
-            user_type, verification_documents, is_verified, created_at, updated_at)
+            organization, user_type, verification_documents, is_verified, created_at, updated_at)
             VALUES (:username, :password, :email, :first_name, :last_name, :phone,
-            :user_type, :verification_documents, :is_verified, NOW(), NOW())";
+            :organization, :user_type, :verification_documents, :is_verified, NOW(), NOW())";
 
     $stmt = $pdo->prepare($sql);
     if (!$stmt->execute($userData)) {

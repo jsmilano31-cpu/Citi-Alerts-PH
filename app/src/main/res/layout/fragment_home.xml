@@ -19,7 +19,7 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Moderator Add Post Button -->
+                <!-- Moderator Add Post Button (legacy, will stay hidden) -->
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/moderatorPanel"
                     android:layout_width="match_parent"
@@ -74,5 +74,18 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:visibility="gone"/>
+
+    <!-- Modern add-post entry: Floating Action Button shown for moderators/responder -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddPost"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:contentDescription="Add Post"
+        android:visibility="gone"
+        app:srcCompat="@drawable/ic_add_post"
+        app:tint="@android:color/white"
+        app:backgroundTint="@color/primary_color" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -1,66 +1,92 @@
 <?php
-header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
+require_once 'config.php';
 
-require_once "config.php";
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
 
-// Define upload directory for post images
-$upload_dir = dirname(__FILE__) . '/uploads/posts/';
-if (!file_exists($upload_dir)) {
-    mkdir($upload_dir, 0755, true);
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit(0);
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['success' => false, 'error' => 'Method not allowed']);
+    exit;
 }
 
 try {
-    $json = file_get_contents('php://input');
-    $data = json_decode($json);
+    // Get JSON input
+    $input = json_decode(file_get_contents('php://input'), true);
 
-    if (!$data || !isset($data->title) || !isset($data->description) || !isset($data->moderator_id)) {
-        throw new Exception("Missing required fields");
+    if (!$input) {
+        throw new Exception('Invalid JSON input');
     }
 
-    // Handle image upload if provided
-    $image_path = null;
-    if (isset($data->image) && !empty($data->image)) {
-        $image_data = base64_decode($data->image);
-        $file_name = uniqid() . '_post.jpg';
-        $file_path = $upload_dir . $file_name;
-
-        if (file_put_contents($file_path, $image_data)) {
-            $image_path = 'uploads/posts/' . $file_name;
-        }
+    // Validate required fields
+    if (!isset($input['title']) || !isset($input['description']) || !isset($input['moderator_id'])) {
+        throw new Exception('Missing required fields: title, description, moderator_id');
     }
 
-    // Insert post into database
-    $stmt = $pdo->prepare("INSERT INTO posts (moderator_id, title, description, image_path, created_at, updated_at)
-                          VALUES (?, ?, ?, ?, NOW(), NOW())");
+    $title = $conn->real_escape_string($input['title']);
+    $description = $conn->real_escape_string($input['description']);
+    $moderator_id = (int)$input['moderator_id'];
+    $image_path = isset($input['image_path']) ? $conn->real_escape_string($input['image_path']) : null;
 
-    if (!$stmt->execute([$data->moderator_id, $data->title, $data->description, $image_path])) {
-        throw new Exception("Failed to create post");
+    // Verify moderator exists and is valid
+    $moderatorCheck = "SELECT id FROM users WHERE id = $moderator_id AND user_type = 'moderator'";
+    $moderatorResult = $conn->query($moderatorCheck);
+
+    if ($moderatorResult->num_rows === 0) {
+        throw new Exception('Invalid moderator ID');
     }
 
-    $post_id = $pdo->lastInsertId();
+    // Insert new post
+    $query = "INSERT INTO posts (moderator_id, title, description, image_path) VALUES (?, ?, ?, ?)";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param("isss", $moderator_id, $title, $description, $image_path);
 
-    // Get the created post details
-    $stmt = $pdo->prepare("SELECT p.*, u.username as moderator_name, u.profile_image as moderator_image
-                          FROM posts p
-                          JOIN users u ON p.moderator_id = u.id
-                          WHERE p.id = ?");
-    $stmt->execute([$post_id]);
-    $post = $stmt->fetch();
+    if ($stmt->execute()) {
+        $post_id = $conn->insert_id;
 
-    echo json_encode([
-        "success" => true,
-        "message" => "Post created successfully",
-        "post" => $post
-    ]);
+        // Get the created post data
+        $getPost = "SELECT p.*, u.username, u.first_name, u.last_name
+                    FROM posts p
+                    JOIN users u ON p.moderator_id = u.id
+                    WHERE p.id = $post_id";
+        $result = $conn->query($getPost);
+        $post = $result->fetch_assoc();
+
+        $response = [
+            'success' => true,
+            'message' => 'Post created successfully',
+            'data' => [
+                'id' => (int)$post['id'],
+                'title' => $post['title'],
+                'description' => $post['description'],
+                'image_url' => $post['image_path'] ? $_SERVER['HTTP_HOST'] . '/' . $post['image_path'] : null,
+                'status' => $post['status'],
+                'views' => (int)$post['views'],
+                'author' => [
+                    'username' => $post['username'],
+                    'name' => $post['first_name'] . ' ' . $post['last_name']
+                ],
+                'created_at' => $post['created_at'],
+                'updated_at' => $post['updated_at']
+            ]
+        ];
+
+        echo json_encode($response);
+    } else {
+        throw new Exception('Failed to create post');
+    }
 
 } catch (Exception $e) {
-    error_log("Create post error: " . $e->getMessage());
-    http_response_code(200); // Keep 200 to handle error in app
+    http_response_code(400);
     echo json_encode([
-        "success" => false,
-        "message" => $e->getMessage()
+        'success' => false,
+        'error' => $e->getMessage()
     ]);
 }
+?>

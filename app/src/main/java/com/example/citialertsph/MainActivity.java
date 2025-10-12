@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
@@ -28,15 +29,21 @@ public class MainActivity extends AppCompatActivity {
         binding.bottomNavigation.setBackground(null);
 
         // Profile FAB click handler
-        binding.fabProfile.setOnClickListener(view -> {
-            replaceFragment(new ProfileFragment());
-        });
+        binding.fabProfile.setOnClickListener(view -> replaceFragment(new ProfileFragment()));
 
         // Emergency FAB click handler
         binding.fabEmergency.setOnClickListener(view -> {
             Intent intent = new Intent(MainActivity.this, EmergencyActivity.class);
             startActivity(intent);
         });
+
+        // Add Post FAB: show only for moderators/responders
+        if (sessionManager.isResponder()) {
+            binding.fabAddPost.setVisibility(View.VISIBLE);
+            binding.fabAddPost.setOnClickListener(v -> openCreatePostComposerOnHome());
+        } else {
+            binding.fabAddPost.setVisibility(View.GONE);
+        }
 
         binding.bottomNavigation.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
@@ -51,6 +58,19 @@ public class MainActivity extends AppCompatActivity {
             }
             return true;
         });
+    }
+
+    private void openCreatePostComposerOnHome() {
+        FragmentManager fm = getSupportFragmentManager();
+        Fragment current = fm.findFragmentById(R.id.frameLayout);
+        if (!(current instanceof HomeFragment)) {
+            replaceFragment(new HomeFragment());
+            fm.executePendingTransactions();
+            current = fm.findFragmentById(R.id.frameLayout);
+        }
+        if (current instanceof HomeFragment) {
+            ((HomeFragment) current).openCreatePostComposer();
+        }
     }
 
     @Override
