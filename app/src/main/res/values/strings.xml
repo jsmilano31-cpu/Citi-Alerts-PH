@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name">CitiAlertPH</string>
+
+
     <string name="your_location_format">Your location: %1$s</string>
     <string name="location_format">Location: %1$.6f, %2$.6f</string>
     <string name="emergency_type_title">Select Emergency Type</string>

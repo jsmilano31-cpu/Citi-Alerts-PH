@@ -11,7 +11,7 @@
         android:fillViewport="true"
         android:fitsSystemWindows="true"
         android:clipToPadding="false"
-        android:paddingBottom="80dp">   <!-- ✅ Prevents bottom nav overlap -->
+        android:paddingBottom="60dp">   <!-- ✅ Prevents bottom nav overlap -->
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -48,7 +48,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="vertical"
+                        android:orientation="horizontal"
                         android:paddingStart="16dp">
 
                         <TextView

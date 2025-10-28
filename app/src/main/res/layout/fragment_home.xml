@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -12,7 +11,9 @@
 
         <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:paddingBottom="60dp"
+            android:clipToPadding="false">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -39,7 +40,7 @@
                             android:layout_height="wrap_content"
                             android:text="Moderator Panel"
                             android:textStyle="bold"
-                            android:textSize="18sp"/>
+                            android:textSize="18sp" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnAddPost"
@@ -47,7 +48,7 @@
                             android:layout_height="wrap_content"
                             android:text="Add New Post"
                             android:layout_marginTop="8dp"
-                            app:icon="@drawable/ic_add_post"/>
+                            app:icon="@drawable/ic_add_post" />
 
                     </LinearLayout>
 
@@ -59,7 +60,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:clipToPadding="false"
-                    android:padding="4dp"/>
+                    android:padding="4dp" />
 
             </LinearLayout>
 
@@ -73,7 +74,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:visibility="gone"/>
+        android:visibility="gone" />
 
     <!-- Modern add-post entry: Floating Action Button shown for moderators/responder -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton

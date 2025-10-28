@@ -30,7 +30,9 @@
 
         <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:paddingBottom="60dp"
+            android:clipToPadding="false">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -68,8 +70,8 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginBottom="8dp"
                                 android:src="@drawable/ic_my_location"
-                                app:fabSize="mini"
                                 app:backgroundTint="@android:color/white"
+                                app:fabSize="mini"
                                 app:tint="@color/colorPrimary" />
 
                             <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -77,8 +79,8 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:src="@drawable/ic_view_list"
-                                app:fabSize="mini"
                                 app:backgroundTint="@android:color/white"
+                                app:fabSize="mini"
                                 app:tint="@color/colorPrimary" />
 
                         </LinearLayout>
@@ -124,20 +126,20 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="0 evacuation centers found"
-                        android:textSize="14sp"
-                        android:textColor="@android:color/darker_gray"
                         android:drawableStart="@drawable/ic_info"
                         android:drawablePadding="8dp"
-                        android:gravity="center_vertical" />
+                        android:gravity="center_vertical"
+                        android:text="0 evacuation centers found"
+                        android:textColor="@android:color/darker_gray"
+                        android:textSize="14sp" />
 
                     <TextView
                         android:id="@+id/tvLastUpdated"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Updated just now"
-                        android:textSize="12sp"
-                        android:textColor="@android:color/darker_gray" />
+                        android:textColor="@android:color/darker_gray"
+                        android:textSize="12sp" />
 
                 </LinearLayout>
 
@@ -154,34 +156,34 @@
                     android:id="@+id/emptyState"
                     android:layout_width="match_parent"
                     android:layout_height="200dp"
-                    android:orientation="vertical"
+                    android:layout_margin="32dp"
                     android:gravity="center"
-                    android:visibility="gone"
-                    android:layout_margin="32dp">
+                    android:orientation="vertical"
+                    android:visibility="gone">
 
                     <ImageView
                         android:layout_width="64dp"
                         android:layout_height="64dp"
-                        android:src="@drawable/ic_location"
+                        android:layout_marginBottom="16dp"
                         android:alpha="0.3"
-                        android:layout_marginBottom="16dp" />
+                        android:src="@drawable/ic_location" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
                         android:text="No evacuation centers found"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
                         android:textColor="@android:color/darker_gray"
-                        android:layout_marginBottom="8dp" />
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:gravity="center"
                         android:text="Pull down to refresh and try again"
-                        android:textSize="14sp"
                         android:textColor="@android:color/darker_gray"
-                        android:gravity="center" />
+                        android:textSize="14sp" />
 
                 </LinearLayout>
 
