@@ -29,6 +29,21 @@
                 android:textStyle="bold"
                 android:textColor="@android:color/holo_red_dark"/>
 
+            <!-- Severity Level Badge -->
+            <TextView
+                android:id="@+id/severityBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="L4"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:background="@android:color/holo_red_dark"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="2dp"
+                android:layout_marginEnd="8dp"
+                android:visibility="gone" />
+
             <TextView
                 android:id="@+id/statusText"
                 android:layout_width="wrap_content"
@@ -46,6 +61,58 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:textSize="14sp"/>
+
+        <!-- Severity Info Row -->
+        <LinearLayout
+            android:id="@+id/severityInfoLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/severityDescriptionText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Severe"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/holo_red_dark" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <!-- Injury Indicator -->
+                <ImageView
+                    android:id="@+id/injuryIndicator"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@android:drawable/ic_menu_info_details"
+                    android:layout_marginEnd="4dp"
+                    android:visibility="gone"
+                    app:tint="@android:color/holo_red_dark"
+                    android:contentDescription="Injuries reported" />
+
+                <!-- Accessibility Indicator -->
+                <ImageView
+                    android:id="@+id/accessibilityIndicator"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_location"
+                    android:layout_marginEnd="4dp"
+                    android:visibility="gone"
+                    app:tint="@android:color/holo_orange_dark"
+                    android:contentDescription="Area accessibility issue" />
+
+            </LinearLayout>
+
+        </LinearLayout>
 
         <TextView
             android:id="@+id/timeText"

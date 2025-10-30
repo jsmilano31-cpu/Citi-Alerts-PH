@@ -22,6 +22,35 @@
     <string name="failed_accept">Failed to accept request</string>
     <string name="respond_emergency">RESPOND TO EMERGENCY</string>
 
+    <!-- Severity Assessment strings -->
+    <string name="severity_assessment_title">Emergency Assessment</string>
+    <string name="severity_question">How severe is the situation?</string>
+    <string name="severity_minor">Minor (manageable)</string>
+    <string name="severity_moderate">Moderate (needs assistance)</string>
+    <string name="severity_severe">Severe (life-threatening)</string>
+    <string name="injuries_question">Is anyone injured?</string>
+    <string name="accessibility_question">Is the area accessible?</string>
+    <string name="accessibility_yes">Yes</string>
+    <string name="accessibility_no">No</string>
+    <string name="accessibility_blocked">Blocked</string>
+    <string name="additional_notes">Additional Information (Optional)</string>
+    <string name="additional_notes_hint">Any additional details that may help responders...</string>
+    <string name="send_request">SEND REQUEST</string>
+    <string name="assessment_validation_severity">Please select the severity level</string>
+    <string name="assessment_validation_injuries">Please indicate if there are any injuries</string>
+    <string name="assessment_validation_accessibility">Please indicate if the area is accessible</string>
+    <string name="priority_request_searching">Priority request - searching for responders...</string>
+    <string name="high_priority_urgent">HIGH PRIORITY - Urgent response required!</string>
+    <string name="critical_emergency_immediate">CRITICAL EMERGENCY - Immediate response dispatched!</string>
+    <string name="injuries_reported">Injuries reported</string>
+    <string name="no_injuries_reported">No injuries reported</string>
+    <string name="area_accessible">Area is accessible</string>
+    <string name="area_not_accessible">Area is not accessible</string>
+    <string name="area_blocked">Area is blocked</string>
+    <string name="accessibility_unknown">Accessibility unknown</string>
+    <string name="accessibility_not_assessed">Accessibility not assessed</string>
+    <string name="severity_not_assessed">Not assessed</string>
+
     <!-- Registration form strings -->
     <string name="create_account">Create Account</string>
     <string name="join_community">Join our emergency response community</string>

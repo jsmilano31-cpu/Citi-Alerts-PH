@@ -18,4 +18,13 @@
     <color name="status_help_coming">#FF9800</color>
     <color name="status_completed">#4CAF50</color>
     <color name="lighter_gray">#D3D3D3</color>
+
+    <!-- Severity Assessment colors -->
+    <color name="severity_minor">#4CAF50</color>      <!-- Green -->
+    <color name="severity_moderate">#FF9800</color>   <!-- Orange -->
+    <color name="severity_severe">#F44336</color>     <!-- Red -->
+    <color name="severity_critical">#D32F2F</color>   <!-- Dark Red -->
+    <color name="injury_indicator">#F44336</color>    <!-- Red for injuries -->
+    <color name="accessibility_warning">#FF9800</color> <!-- Orange for access issues -->
+    <color name="accessibility_blocked">#F44336</color> <!-- Red for blocked areas -->
 </resources>

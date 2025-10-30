@@ -31,6 +31,7 @@ import androidx.activity.OnBackPressedCallback;
 import com.example.citialertsph.models.EmergencyRequest;
 import com.example.citialertsph.utils.ApiClient;
 import com.example.citialertsph.utils.SessionManager;
+import com.example.citialertsph.SeverityAssessmentDialog;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
@@ -373,25 +374,55 @@ public class EmergencyActivity extends AppCompatActivity implements EmergencyLis
         new AlertDialog.Builder(this)
                 .setTitle(R.string.emergency_type_title)
                 .setItems(emergencyTypes, (dialog, which) -> {
-                    sendEmergencyRequest(emergencyTypes[which]);
+                    String selectedType = emergencyTypes[which];
+                    showSeverityAssessmentDialog(selectedType);
                 })
                 .setNegativeButton(R.string.no, null)
                 .show();
     }
 
-    private void sendEmergencyRequest(String emergencyType) {
+    private void showSeverityAssessmentDialog(String emergencyType) {
+        SeverityAssessmentDialog severityDialog = new SeverityAssessmentDialog(this, emergencyType,
+                new SeverityAssessmentDialog.SeverityAssessmentListener() {
+                    @Override
+                    public void onAssessmentComplete(SeverityAssessmentDialog.SeverityData severityData) {
+                        sendEmergencyRequestWithSeverity(severityData);
+                    }
+
+                    @Override
+                    public void onAssessmentCancelled() {
+                        // User cancelled the assessment, nothing to do
+                    }
+                });
+
+        severityDialog.show();
+    }
+
+    private void sendEmergencyRequestWithSeverity(SeverityAssessmentDialog.SeverityData severityData) {
         try {
             JsonObject json = new JsonObject();
             json.addProperty("user_id", sessionManager.getUserId());
-            json.addProperty("emergency_type", emergencyType);
+            json.addProperty("emergency_type", severityData.getEmergencyType());
             json.addProperty("latitude", currentLatitude);
             json.addProperty("longitude", currentLongitude);
             json.addProperty("location_name", currentAddress);
 
-            Log.d("EmergencyActivity", "Sending emergency request: " + json.toString());
+            // Add severity assessment data
+            json.addProperty("severity_level", severityData.getSeverityLevel());
+            json.addProperty("severity_description", severityData.getSeverityDescription());
+            json.addProperty("has_injuries", severityData.hasInjuries());
+            json.addProperty("area_accessible", severityData.getAreaAccessible());
+
+            if (!severityData.getAdditionalNotes().isEmpty()) {
+                json.addProperty("additional_notes", severityData.getAdditionalNotes());
+            }
+
+            Log.d("EmergencyActivity", "Sending emergency request with severity: " + json.toString());
 
             // Show loading state immediately with animation
-            showLoadingStateWithAnimation("Sending emergency request...");
+            String loadingMessage = String.format("Sending %s emergency request (Level %d)...",
+                    severityData.getSeverityDescription().toLowerCase(), severityData.getSeverityLevel());
+            showLoadingStateWithAnimation(loadingMessage);
 
             apiClient.postRequest("create_emergency.php", json, new Callback() {
                 @Override
@@ -417,7 +448,8 @@ public class EmergencyActivity extends AppCompatActivity implements EmergencyLis
                                 Log.d("EmergencyActivity", "Emergency ID received: " + currentEmergencyId);
 
                                 runOnUiThread(() -> {
-                                    updateLoadingStateWithAnimation("Request sent! Looking for available responders...");
+                                    String priorityMessage = getSeverityPriorityMessage(severityData.getSeverityLevel());
+                                    updateLoadingStateWithAnimation("Request sent! " + priorityMessage);
                                     startStatusChecking();
                                 });
                             } else {
@@ -452,6 +484,23 @@ public class EmergencyActivity extends AppCompatActivity implements EmergencyLis
             Toast.makeText(this, "Error creating request: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
+
+    private String getSeverityPriorityMessage(int severityLevel) {
+        switch (severityLevel) {
+            case 1:
+            case 2:
+                return "Looking for available responders...";
+            case 3:
+                return "Priority request - searching for responders...";
+            case 4:
+                return "HIGH PRIORITY - Urgent response required!";
+            case 5:
+                return "CRITICAL EMERGENCY - Immediate response dispatched!";
+            default:
+                return "Looking for available responders...";
+        }
+    }
+
 
     private void showLoadingStateWithAnimation(String message) {
         statusCard.setVisibility(View.VISIBLE);
@@ -534,7 +583,8 @@ public class EmergencyActivity extends AppCompatActivity implements EmergencyLis
 
     private void checkEmergencyStatus() {
         if (currentEmergencyId == null) {
-            Log.w("EmergencyActivity", "No emergency ID to check status");
+            Log.w("EmergencyActivity", "No emergency ID to check status - stopping status checks");
+            stopStatusChecking();
             return;
         }
 
@@ -544,6 +594,7 @@ public class EmergencyActivity extends AppCompatActivity implements EmergencyLis
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
                 Log.e("EmergencyActivity", "Status check failed", e);
+                // Don't stop checking on network failures, just log the error
             }
 
             @Override
@@ -558,6 +609,16 @@ public class EmergencyActivity extends AppCompatActivity implements EmergencyLis
                     } catch (Exception e) {
                         Log.e("EmergencyActivity", "Error parsing status response", e);
                     }
+                } else if (response.code() == 404) {
+                    // Emergency not found - likely completed or deleted
+                    Log.w("EmergencyActivity", "Emergency not found - stopping status checks");
+                    runOnUiThread(() -> {
+                        stopStatusChecking();
+                        clearEmergencyState();
+                        currentEmergencyId = null;
+                        hideLoadingStateWithAnimation();
+                        Toast.makeText(EmergencyActivity.this, "Emergency request no longer active", Toast.LENGTH_SHORT).show();
+                    });
                 }
             }
         });
@@ -630,8 +691,11 @@ public class EmergencyActivity extends AppCompatActivity implements EmergencyLis
                 String responseData = response.body().string();
                 if (response.isSuccessful()) {
                     runOnUiThread(() -> {
+                        // Stop status checking and clear state immediately
+                        stopStatusChecking();
                         clearEmergencyState();
-                        hideLoadingState();
+                        currentEmergencyId = null;
+                        hideLoadingStateWithAnimation();
                         Toast.makeText(EmergencyActivity.this,
                                 "Emergency request cancelled", Toast.LENGTH_LONG).show();
                     });
@@ -687,15 +751,42 @@ public class EmergencyActivity extends AppCompatActivity implements EmergencyLis
                         backgroundColor = ContextCompat.getColor(this, android.R.color.holo_blue_light);
                         showLoading = false;
                         showCancelButton = false;
+
+                        // Stop status checking immediately
+                        stopStatusChecking();
                         clearEmergencyState();
-                        break;
+                        currentEmergencyId = null;
+
+                        // Hide status card after a brief delay to show completion message
+                        if (statusCheckHandler != null) {
+                            statusCheckHandler.postDelayed(() -> {
+                                hideLoadingStateWithAnimation();
+                                Toast.makeText(this, "Emergency request completed successfully!", Toast.LENGTH_LONG).show();
+                            }, 2000);
+                        }
+
+                        return; // Exit early to prevent further processing
+
                     case "cancelled":
                         message = getString(R.string.request_cancelled);
                         backgroundColor = ContextCompat.getColor(this, android.R.color.holo_orange_light);
                         showLoading = false;
                         showCancelButton = false;
+
+                        // Stop status checking immediately
+                        stopStatusChecking();
                         clearEmergencyState();
-                        break;
+                        currentEmergencyId = null;
+
+                        // Hide status card after a brief delay to show cancellation message
+                        if (statusCheckHandler != null) {
+                            statusCheckHandler.postDelayed(() -> {
+                                hideLoadingStateWithAnimation();
+                            }, 2000);
+                        }
+
+                        return; // Exit early to prevent further processing
+
                     default:
                         message = getString(R.string.waiting_response);
                         backgroundColor = ContextCompat.getColor(this, android.R.color.holo_orange_light);
@@ -715,6 +806,13 @@ public class EmergencyActivity extends AppCompatActivity implements EmergencyLis
 
         } catch (Exception e) {
             Log.e(TAG, "Error updating status indicator", e);
+        }
+    }
+
+    private void stopStatusChecking() {
+        if (statusCheckHandler != null) {
+            statusCheckHandler.removeCallbacksAndMessages(null);
+            Log.d("EmergencyActivity", "Status checking stopped");
         }
     }
 
@@ -788,6 +886,15 @@ public class EmergencyActivity extends AppCompatActivity implements EmergencyLis
         MaterialButton respondButton = dialogView.findViewById(R.id.respondButton);
         MaterialButton dismissButton = dialogView.findViewById(R.id.dismissButton);
 
+        // Severity assessment UI components
+        TextView severityDescriptionText = dialogView.findViewById(R.id.severityDescriptionText);
+        TextView severityLevelBadge = dialogView.findViewById(R.id.severityLevelBadge);
+        TextView injuryStatusText = dialogView.findViewById(R.id.injuryStatusText);
+        TextView accessibilityStatusText = dialogView.findViewById(R.id.accessibilityStatusText);
+        android.widget.LinearLayout additionalNotesLayout = dialogView.findViewById(R.id.additionalNotesLayout);
+        TextView additionalNotesText = dialogView.findViewById(R.id.additionalNotesText);
+        ImageView severityIcon = dialogView.findViewById(R.id.severityIcon);
+
         typeText.setText(request.getEmergencyType());
         locText.setText(request.getLocationName());
         try {
@@ -797,6 +904,11 @@ public class EmergencyActivity extends AppCompatActivity implements EmergencyLis
         } catch (Exception e) {
             timeText.setText(String.valueOf(request.getCreatedAt()));
         }
+
+        // Display severity assessment information
+        displaySeverityInformation(request, severityDescriptionText, severityLevelBadge,
+                injuryStatusText, accessibilityStatusText,
+                additionalNotesLayout, additionalNotesText, severityIcon);
 
         AlertDialog dialog = new AlertDialog.Builder(this)
                 .setView(dialogView)
@@ -849,6 +961,100 @@ public class EmergencyActivity extends AppCompatActivity implements EmergencyLis
         });
     }
 
+    // Display severity assessment information in the dialog for the selected emergency request
+    private void displaySeverityInformation(EmergencyRequest request, TextView severityDescriptionText,
+                                            TextView severityLevelBadge, TextView injuryStatusText,
+                                            TextView accessibilityStatusText, android.widget.LinearLayout additionalNotesLayout,
+                                            TextView additionalNotesText, ImageView severityIcon) {
+
+        int severityLevel = request.getSeverityLevel();
+        String severityDescription = request.getSeverityDescription();
+
+        // Set severity description
+        if (severityDescription != null && !severityDescription.isEmpty()) {
+            severityDescriptionText.setText(severityDescription);
+        } else {
+            severityDescriptionText.setText("Not assessed");
+        }
+
+        // Set severity level badge
+        if (severityLevel > 0) {
+            severityLevelBadge.setText("LEVEL " + severityLevel);
+
+            // Set badge color based on severity level
+            int badgeColor;
+            int iconTint;
+            switch (severityLevel) {
+                case 1:
+                case 2:
+                    badgeColor = ContextCompat.getColor(this, android.R.color.holo_green_dark);
+                    iconTint = ContextCompat.getColor(this, android.R.color.holo_green_dark);
+                    break;
+                case 3:
+                    badgeColor = ContextCompat.getColor(this, android.R.color.holo_orange_dark);
+                    iconTint = ContextCompat.getColor(this, android.R.color.holo_orange_dark);
+                    break;
+                case 4:
+                case 5:
+                    badgeColor = ContextCompat.getColor(this, android.R.color.holo_red_dark);
+                    iconTint = ContextCompat.getColor(this, android.R.color.holo_red_dark);
+                    break;
+                default:
+                    badgeColor = ContextCompat.getColor(this, android.R.color.darker_gray);
+                    iconTint = ContextCompat.getColor(this, android.R.color.darker_gray);
+            }
+
+            severityLevelBadge.setBackgroundColor(badgeColor);
+            severityIcon.setColorFilter(iconTint, PorterDuff.Mode.SRC_IN);
+        } else {
+            severityLevelBadge.setText("N/A");
+            severityLevelBadge.setBackgroundColor(ContextCompat.getColor(this, android.R.color.darker_gray));
+        }
+
+        // Set injury status
+        if (request.hasInjuries()) {
+            injuryStatusText.setText("Injuries reported");
+            injuryStatusText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark));
+        } else {
+            injuryStatusText.setText("No injuries reported");
+            injuryStatusText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark));
+        }
+
+        // Set accessibility status
+        String accessibility = request.getAreaAccessible();
+        if (accessibility != null) {
+            switch (accessibility.toLowerCase()) {
+                case "yes":
+                    accessibilityStatusText.setText("Area is accessible");
+                    accessibilityStatusText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_green_dark));
+                    break;
+                case "no":
+                    accessibilityStatusText.setText("Area is not accessible");
+                    accessibilityStatusText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_orange_dark));
+                    break;
+                case "blocked":
+                    accessibilityStatusText.setText("Area is blocked");
+                    accessibilityStatusText.setTextColor(ContextCompat.getColor(this, android.R.color.holo_red_dark));
+                    break;
+                default:
+                    accessibilityStatusText.setText("Accessibility unknown");
+                    accessibilityStatusText.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray));
+            }
+        } else {
+            accessibilityStatusText.setText("Accessibility not assessed");
+            accessibilityStatusText.setTextColor(ContextCompat.getColor(this, android.R.color.darker_gray));
+        }
+
+        // Show additional notes if available
+        String additionalNotes = request.getAdditionalNotes();
+        if (additionalNotes != null && !additionalNotes.trim().isEmpty()) {
+            additionalNotesLayout.setVisibility(View.VISIBLE);
+            additionalNotesText.setText(additionalNotes);
+        } else {
+            additionalNotesLayout.setVisibility(View.GONE);
+        }
+    }
+
     // Add: allow the owner to mark an emergency request as completed
     public void completeEmergencyRequest(EmergencyRequest request) {
         if (request == null) return;
@@ -878,7 +1084,7 @@ public class EmergencyActivity extends AppCompatActivity implements EmergencyLis
                         Toast.makeText(EmergencyActivity.this,
                                 "Emergency marked as completed", Toast.LENGTH_SHORT).show();
 
-                        // Update status card to completed and clear state
+                        // Update status card to completed and clear state immediately
                         JsonObject status = new JsonObject();
                         status.addProperty("status", "completed");
                         status.addProperty("has_responder", false);
